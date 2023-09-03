@@ -1,7 +1,7 @@
 val ScalaVersion = "3.3.0"
 val ts4sVersion  = "0.0.1"
 
-val bigdlJarPath = "file://///Users/e049627/Development/bigdl_scala_2.13/BigDL/scala/dllib/target/"
+val bigdlJarPath = ""
 
 lazy val bigDlDlibArtifact =
   bigdlJarPath + "bigdl-dllib-spark_3.2.3-2.3.0-SNAPSHOT-jar-with-dependencies.jar"
