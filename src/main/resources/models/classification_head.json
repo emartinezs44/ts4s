@@ -1,0 +1,33 @@
+[{
+  "layer" : "lm_head.layer_norm.bias",
+  "dims" : [ 768, 1 ],
+  "capacity" : 3072
+}, {
+  "layer" : "lm_head.layer_norm.weight",
+  "dims" : [ 768, 1 ],
+  "capacity" : 3072
+}, {
+  "layer" : "lm_head.dense.bias",
+  "dims" : [ 768, 1 ],
+  "capacity" : 3072
+}, {
+  "layer" : "lm_head.dense.weight",
+  "dims" : [ 768, 768 ],
+  "capacity" : 2359296
+}, {
+  "layer" : "lm_head.weight",
+  "dims" : [ 768, 50262 ],
+  "capacity" : 154404864
+}, {
+  "layer" : "lm_head.bias",
+  "dims" : [ 50262, 1 ],
+  "capacity" : 201048
+}, {
+  "layer" : "pooler.dense.weight",
+  "dims" : [ 768, 768 ],
+  "capacity" : 2359296
+}, {
+  "layer" : "pooler.dense.bias",
+  "dims" : [ 768 ],
+  "capacity" : 3072
+}]
