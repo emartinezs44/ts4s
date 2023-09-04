@@ -1,7 +1,7 @@
 package com.intel.analytics.bigdl.dllib.keras.autograd
 
 import com.intel.analytics.bigdl.dllib.keras.layers.KerasLayerWrapper
-import com.intel.analytics.bigdl.dllib.keras.layers.internal.{InternalERF, InternalERF2}
+import com.intel.analytics.bigdl.dllib.keras.layers.internal.InternalERF
 import com.intel.analytics.bigdl.dllib.keras.layers.utils.KerasUtils
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -9,7 +9,7 @@ import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
 
 import scala.reflect.ClassTag
 
-object ZooExtensions {
+object DLLibExtensions {
   def maskValue[T: ClassTag](bidirectional: Boolean = true, seqLen: Int)(implicit
     ev: TensorNumeric[T]
   ) = if (!bidirectional) {
@@ -32,5 +32,4 @@ object ZooExtensions {
       ).inputs(x.node)
     )
   }
-
 }

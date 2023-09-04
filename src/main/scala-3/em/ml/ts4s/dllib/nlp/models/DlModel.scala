@@ -14,7 +14,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 
 trait DlModel {
-  
+
+  def unfreeze: List[String]
+
   def fit(
     checkpointPath: String = "",
     trainingDataset: RDD[Sample[Float]],
@@ -33,7 +35,8 @@ trait DlModel {
     inputModel: Option[AbstractModule[Activity, Activity, Float]] = None,
     multiLabel: Boolean = false,
     validationPerEpoch: Boolean = true,
-    parallelAdam: Boolean = false
+    parallelAdam: Boolean = false,
+    isLora: Boolean = false
   )(using ev: TensorNumeric[Float]): KerasNet[Float] = {
 
     val model = {
@@ -64,6 +67,12 @@ trait DlModel {
       List[ValidationMethod[Float]]()
     )
 
+    if (isLora)
+       model.freeze()
+       model.unFreeze(unfreeze: _*)
+
+
+    model.summary()
     model.fit(trainingDataset, batchSize, epochs, validationDataset)
     model
   }

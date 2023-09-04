@@ -1,7 +1,7 @@
 val ScalaVersion = "3.3.0"
 val ts4sVersion  = "0.0.1"
 
-val bigdlJarPath = ""
+val bigdlJarPath = "file://///Users/e049627/Development/bigdl_scala_2.13/BigDL/scala/dllib/target/"
 
 lazy val bigDlDlibArtifact =
   bigdlJarPath + "bigdl-dllib-spark_3.2.3-2.3.0-SNAPSHOT-jar-with-dependencies.jar"
@@ -57,8 +57,7 @@ lazy val ts4s = project
       jsoniterScalaCore,
       jsoniterScalaMacros,
       sparkScala3
-    ),
-    excludeDependencies += "org.scala-lang.modules" % "scala-xml_2.13"
+    )
   )
 
 resolvers += "ossrh repository" at "https://oss.sonatype.org/content/repositories/snapshots/"

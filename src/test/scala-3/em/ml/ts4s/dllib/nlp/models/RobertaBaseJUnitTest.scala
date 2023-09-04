@@ -1,8 +1,8 @@
 package em.ml.ts4s.dllib.nlp.models
 
+import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
 import org.junit.Test
-import org.junit.Assert._
-
+import org.junit.Assert.*
 import com.intel.analytics.bigdl.dllib.nn.LookupTable
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.{MultiShape, Shape, T}
@@ -97,12 +97,14 @@ class IntJunitTests {
       maxPositionLen = bertBaseSeqLength,
       outputAllBlock = false,
       inputSeqLen = bertBaseSeqLength,
-      headLayer = None
+      headLayer = None,
+      useLoraInMultiHeadAttention = true
     )
 
     val model2 = model1 //.evaluate()
     model2.build(bertBaseShape)
     val result = model2 //.evaluate()
+
 
     val t = System.nanoTime
     result.forward(input)
@@ -152,11 +154,15 @@ class IntJunitTests {
     val result2 = result.forward(input)
     val t9      = System.nanoTime
     //val result2 = result.forward(input)
-    println("Backward")
+    println("Backward 0")
     model1.backward(input, result2)
+    println("Backward 1")
     model1.backward(input, result2)
+    println("Backward 2")
     model1.backward(input, result2)
+    println("Backward 3")
     model1.backward(input, result2)
+    println("Backward 4")
     model1.backward(input, result2)
     val duration10 = (System.nanoTime - t9) / 1e9d
     println("D: " + duration10 / 5)

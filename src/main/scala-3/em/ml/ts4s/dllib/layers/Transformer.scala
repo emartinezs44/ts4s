@@ -1,12 +1,13 @@
 package em.ml.ts4s.dllib.layers
 
 import com.intel.analytics.bigdl.dllib.keras.Net
-import com.intel.analytics.bigdl.dllib.keras.autograd.ZooExtensions.maskValue
-import com.intel.analytics.bigdl.dllib.keras.autograd.{AutoGrad, Variable, ZooExtensions}
+import com.intel.analytics.bigdl.dllib.keras.autograd.DLLibExtensions.maskValue
+import com.intel.analytics.bigdl.dllib.keras.autograd.{AutoGrad, Variable, DLLibExtensions}
 import com.intel.analytics.bigdl.dllib.keras.layers.{Activation, Dense, Dropout, LayerNorm, Permute, Reshape, Select, SoftMax}
 import com.intel.analytics.bigdl.dllib.tensor.TensorNumericMath.TensorNumeric
 import em.ml.ts4s.dllib.nlp.models.{RobertaEquivalenceGraph, RobertaInternalLayer}
 
+import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
 class Transformer[T: ClassTag](
@@ -20,19 +21,14 @@ class Transformer[T: ClassTag](
   var graph: RobertaEquivalenceGraph
 )(implicit ev: TensorNumeric[T]) {
 
-  def projectionLayer(outputSize: Int, name: String): Net = {
+  private def projectionLayer(outputSize: Int, name: String): (Net, String) = {
     val gName = s"${name}_${java.util.UUID.randomUUID()}"
-    new Dense[T](outputSize).setName(gName)
+    (Dense[T](outputSize).setName(gName), gName)
   }
-
-  /*def gelu(x: Variable[T]): Variable[T] = {
-    x * 0.5 * (Activation("tanh").from((AutoGrad.square(x) * x * 0.044715 + x)
-   * (scala.math.sqrt(2 / scala.math.Pi))) + 1)
-  }*/
 
   def gelu(x: Variable[T]): Variable[T] = {
     val y = x / math.sqrt(2.0)
-    val e = ZooExtensions.erf(y)
+    val e = DLLibExtensions.erf(y)
     x * 0.5 * (e + 1.0)
   }
 
@@ -66,21 +62,21 @@ class Transformer[T: ClassTag](
     blockNumber: Int
   ): (Variable[T], Variable[T]) = {
     val size = if (intermediateSize > 0) intermediateSize else hiddenSize * 4
-    val h    = projectionLayer(size, name).from(x)
+    val h    = projectionLayer(size, name)._1.from(x)
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(h),
+        DLLibExtensions.metaVariableInfo(h),
         s"encoder.layer.${blockNumber}.intermediate.dense"
       ) :: graph.nodes
     )
 
     val a  = gelu(h)
-    val h2 = projectionLayer(hiddenSize, name).from(a)
+    val h2 = projectionLayer(hiddenSize, name)._1.from(a)
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(h2),
+        DLLibExtensions.metaVariableInfo(h2),
         s"encoder.layer.${blockNumber}.output.dense"
       ) :: graph.nodes
     )
@@ -126,33 +122,92 @@ class Transformer[T: ClassTag](
     (w2, w2)
   }
 
+  def addLowRankMatrices(rank: Int = 8, alpha: Int = 32, output: Int, input: Variable[T], name: String, stdName: String) = {
+    val scale = alpha / rank
+    val a     = Dense[T](outputDim = rank, bias = false, init = "normal").setName(s"${name}.a").from(input)
+    val b     = Dense[T](outputDim = output, init = "zero").setName(s"${name}.b").from(a)
+    graph = graph.copy(
+      RobertaInternalLayer(
+        DLLibExtensions.metaVariableInfo(a),
+        s"${stdName}.a"
+      )
+        :: RobertaInternalLayer(
+          DLLibExtensions.metaVariableInfo(b),
+          s"${stdName}.b"
+        )
+        :: graph.nodes
+    )
+    b * scale
+  }
+
   def multiHeadSelfAttention(
     x: Variable[T],
     hiddenSize: Int,
     inputSeqLen: Variable[T],
     block: Int,
-    attention_mask: Variable[T] = null
-  ): (Variable[T], Variable[T], Variable[T], Variable[T]) = {
+    attention_mask: Variable[T] = null,
+    useLoraInMultiHeadAttention: Boolean = false
+  ): (Variable[T], Variable[T], Variable[T], Variable[T], ListBuffer[String]) = {
 
-    val query = projectionLayer(hiddenSize, s"Query_$block").from(x)
-    val key   = projectionLayer(hiddenSize, s"Key_$block").from(x)
-    val value = projectionLayer(hiddenSize, s"Value_$block").from(x)
+    val matNames = ListBuffer[String]()
+    val (query, key, value) = {
+      if (!useLoraInMultiHeadAttention)
+         val q = projectionLayer(hiddenSize, s"Query_$block")._1.from(x)
+         val k = projectionLayer(hiddenSize, s"Key_$block")._1.from(x)
+         val v = projectionLayer(hiddenSize, s"Value_$block")._1.from(x)
+         graph = graph.copy(
+           RobertaInternalLayer(
+             DLLibExtensions.metaVariableInfo(q),
+             s"encoder.layer.${block}.attention.self.query"
+           )
+             :: RobertaInternalLayer(
+               DLLibExtensions.metaVariableInfo(k),
+               s"encoder.layer.${block}.attention.self.key"
+             )
+             :: RobertaInternalLayer(
+               DLLibExtensions.metaVariableInfo(v),
+               s"encoder.layer.${block}.attention.self.value"
+             )
+             :: graph.nodes
+         )
+         (q, k, v)
+      else
+         val q = {
+           val (node, _) = projectionLayer(hiddenSize, s"query_$block")
+           node.from(x)
+         }
+         val qLora =
+           q + addLowRankMatrices(output = hiddenSize, input = q, name = s"query_$block", stdName = s"encoder.layer.${block}.attention.self.query")
+         matNames += s"query_$block.a"
+         matNames += s"query_$block.b"
 
-    graph = graph.copy(
-      RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(query),
-        s"encoder.layer.${block}.attention.self.query"
-      )
-        :: RobertaInternalLayer(
-          ZooExtensions.metaVariableInfo(key),
-          s"encoder.layer.${block}.attention.self.key"
-        )
-        :: RobertaInternalLayer(
-          ZooExtensions.metaVariableInfo(value),
-          s"encoder.layer.${block}.attention.self.value"
-        )
-        :: graph.nodes
-    )
+         val k = projectionLayer(hiddenSize, s"Key_$block")._1.from(x)
+         val v = {
+           val (node, _) = projectionLayer(hiddenSize, s"Value_$block")
+           node.from(x)
+         }
+         val vLora =
+           v + addLowRankMatrices(output = hiddenSize, input = v, name = s"value_$block", stdName = s"encoder.layer.${block}.attention.self.value")
+         matNames += s"value_$block.a"
+         matNames += s"value_$block.b"
+
+         graph = graph.copy(
+           RobertaInternalLayer(
+             DLLibExtensions.metaVariableInfo(q),
+             s"encoder.layer.${block}.attention.self.query"
+           )
+             :: RobertaInternalLayer(
+               DLLibExtensions.metaVariableInfo(k),
+               s"encoder.layer.${block}.attention.self.key"
+             )
+             :: RobertaInternalLayer(
+               DLLibExtensions.metaVariableInfo(v),
+               s"encoder.layer.${block}.attention.self.value"
+             )
+             :: graph.nodes
+         )
+         (qLora, k, vLora)
+    }
 
     val q = splitHeads(query, nHead)
     val k = splitHeads(key, nHead, k = true)
@@ -160,18 +215,18 @@ class Transformer[T: ClassTag](
 
     val (a, context_layer) = attn(q, k, v, true, inputSeqLen = inputSeqLen, attention_mask = attention_mask)
     val m                  = mergeHeads(a)
-    val n                  = projectionLayer(hiddenSize, s"AfterMergeDense_${block}").from(m)
+    val n                  = projectionLayer(hiddenSize, s"AfterMergeDense_${block}")._1.from(m)
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(n),
+        DLLibExtensions.metaVariableInfo(n),
         s"encoder.layer.${block}.attention.output.dense"
       ) :: graph.nodes
     )
 
     // State -> Context Vector -> Output dense
     /** Test without  dropout * */
-    (Dropout(hiddenPDrop).from(n), x, a, context_layer)
+    (Dropout(hiddenPDrop).from(n), x, a, context_layer, matNames)
   }
 
   def block(
@@ -180,37 +235,61 @@ class Transformer[T: ClassTag](
     inputSeqLen: Variable[T],
     epsilon: Double = 1e-5,
     blockNumber: Int,
-    attention_mask: Variable[T] = null
-  ): (Variable[T], RobertaEquivalenceGraph, Variable[T], Variable[T], Variable[T]) = {
+    attention_mask: Variable[T] = null,
+    useLoraInMultiHeadAttention: Boolean = false
+  ): (Variable[T], RobertaEquivalenceGraph, Variable[T], Variable[T], Variable[T], ListBuffer[String]) = {
 
-    val (a, state, contextVector, context_layer) = multiHeadSelfAttention(
+    val (a, state, contextVector, context_layer, matNames) = multiHeadSelfAttention(
       x,
       hiddenSize,
       inputSeqLen = inputSeqLen,
       blockNumber,
-      attention_mask = attention_mask
+      attention_mask = attention_mask,
+      useLoraInMultiHeadAttention
     )
 
     val n = LayerNorm(hiddenSize, epsilon).from(x + a)
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(n),
+        DLLibExtensions.metaVariableInfo(n),
         s"encoder.layer.${blockNumber}.attention.output.LayerNorm"
       ) :: graph.nodes
     )
 
     val (m, _) =
-      mlp(n, hiddenSize, s"AfterLayerNormInBlock_${blockNumber}", blockNumber)
+      mlp(n, hiddenSize, s"Intermediate_${blockNumber}", blockNumber)
+
     val h = LayerNorm(hiddenSize, epsilon).from(n + m)
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(h),
+        DLLibExtensions.metaVariableInfo(h),
         s"encoder.layer.${blockNumber}.output.LayerNorm"
       ) :: graph.nodes
     )
 
-    (h, graph, state, contextVector, context_layer)
+    (h, graph, state, contextVector, context_layer, matNames)
   }
+}
+
+object Transformer {
+  def loraParameters(rank: Int = 8, blocks: Int, hiddenSize: Int) =
+     val nodes = 0 until blocks map { i =>
+       Array(
+         (s"encoder.layer.${i}.attention.self.query.a.weight" -> Array(hiddenSize, rank)),
+         (s"encoder.layer.${i}.attention.self.query.a.bias"   -> Array(1, rank)),
+         (s"encoder.layer.${i}.attention.self.query.b.weight" -> Array(rank, hiddenSize)),
+         (s"encoder.layer.${i}.attention.self.query.b.bias"   -> Array(1, hiddenSize)),
+         (s"encoder.layer.${i}.attention.self.key.a.weight"   -> Array(hiddenSize, rank)),
+         (s"encoder.layer.${i}.attention.self.key.a.bias"     -> Array(1, rank)),
+         (s"encoder.layer.${i}.attention.self.key.b.weight"   -> Array(rank, hiddenSize)),
+         (s"encoder.layer.${i}.attention.self.key.b.bias"     -> Array(1, hiddenSize)),
+         (s"encoder.layer.${i}.attention.self.value.a.weight" -> Array(hiddenSize, rank)),
+         (s"encoder.layer.${i}.attention.self.value.a.bias"   -> Array(1, rank)),
+         (s"encoder.layer.${i}.attention.self.value.b.weight" -> Array(rank, hiddenSize)),
+         (s"encoder.layer.${i}.attention.self.value.b.bias"   -> Array(1, hiddenSize))
+       )
+     }
+     nodes.flatten.toMap
 }

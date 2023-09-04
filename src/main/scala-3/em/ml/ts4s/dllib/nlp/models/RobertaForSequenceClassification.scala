@@ -8,7 +8,7 @@ import com.intel.analytics.bigdl.dllib.nn.internal.KerasLayer
 import com.intel.analytics.bigdl.dllib.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.dllib.keras.layers.utils.KerasUtils
 import com.intel.analytics.bigdl.dllib.keras.{Model, Net}
-import com.intel.analytics.bigdl.dllib.keras.autograd.{Variable, ZooExtensions}
+import com.intel.analytics.bigdl.dllib.keras.autograd.{Variable, DLLibExtensions}
 import com.intel.analytics.bigdl.dllib.keras.layers.{Activation, Dense, Dropout, Embedding, LayerNorm, Select, SoftMax}
 import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -18,10 +18,10 @@ import em.ml.ts4s.dllib.extensions.*
 import em.ml.ts4s.tokenizers.BpeTokenizer
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import com.github.plokhotnyuk.jsoniter_scala.core.*
+import em.ml.ts4s.dllib.layers.Transformer
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.*
-
-import scala3udf.{Udf => udf}
+import scala3udf.Udf as udf
 
 import scala.collection.Seq
 
@@ -59,7 +59,7 @@ class RobertaClassificationHead[T: ClassTag](
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(output),
+        DLLibExtensions.metaVariableInfo(output),
         s"classification.dense"
       ) :: graph.nodes
     )
@@ -86,13 +86,13 @@ class RobertaClassificationHead[T: ClassTag](
 
     graph = graph.copy(
       RobertaInternalLayer(
-        ZooExtensions.metaVariableInfo(d),
+        DLLibExtensions.metaVariableInfo(d),
         s"classification.output"
       ) :: graph.nodes
     )
 
     graphModel = Some(graph)
-    Model(input, d)
+    Model(input, d).setName("classification_head")
   }
 }
 
@@ -105,7 +105,8 @@ class RobertaForSequenceClassification(
   intermediateSize: Int = 3072,
   hiddenPDrop: Float = 0.1,
   attnPDrop: Float = 0.1,
-  outputAllBlock: Boolean = false
+  outputAllBlock: Boolean = false,
+  useLoraInMultiHeadAtt: Boolean = false
 ) extends DlModel {
 
   val robertaBaseShape = MultiShape(
@@ -127,7 +128,8 @@ class RobertaForSequenceClassification(
     maxPositionLen = seqLen,
     outputAllBlock = false,
     inputSeqLen = seqLen,
-    headLayer = None
+    headLayer = None,
+    useLoraInMultiHeadAttention = useLoraInMultiHeadAtt
   )
 
   def convertModelFromOnnx(
@@ -141,7 +143,6 @@ class RobertaForSequenceClassification(
     val jsonStreamEncoderPath = getClass.getClassLoader.getResourceAsStream("models/roberta_base.json")
     val jsonStreamHeadPath    = getClass.getClassLoader.getResourceAsStream("models/classification_head.json")
     val tensorsList           = LoadWeightsAndBiases.loadFromOnnx(onnxModelPath, jsonStreamEncoderPath, Some(jsonStreamHeadPath))
-
     val head = new RobertaClassificationHead[Float](
       hiddenSize = model.hiddenSize,
       drop = model.hiddenPDrop,
@@ -188,14 +189,25 @@ class RobertaForSequenceClassification(
         if (result.isDefined) {
           (result.get._1, result.get._2)
         } else {
-          (
-            nameToSearch,
-            Tensor[Float](
-              RobertaClassHead.parameters(labelsNum = outputClasses)(
-                nameToSearch
-              )
-            ).rand()
-          )
+          // Add head nodes
+          val headNodes = RobertaClassHead.parameters(labelsNum = outputClasses)
+          val headNode  = headNodes.get(nameToSearch)
+          val loraNodes = Transformer.loraParameters(blocks = model.nBlock, hiddenSize = model.hiddenSize)
+          if (headNode.isDefined) {
+            (
+              nameToSearch,
+              Tensor[Float](
+                headNode.get
+              ).rand()
+            )
+          } else {
+            (
+              nameToSearch,
+              Tensor[Float](
+                loraNodes(nameToSearch)
+              ).rand()
+            )
+          }
         }
       } else {
         throw new Exception("Node not found")
@@ -216,6 +228,12 @@ class RobertaForSequenceClassification(
 
     modelBuilt.setWeightsBias(parametersInitialized.map(_._2).toArray)
     modelBuilt.saveModule(modelStorePath, weightsStorePath)
+  }
+
+  override def unfreeze: List[String] = {
+    "classification_head" :: (0 until nBlock).flatMap { block =>
+      Array(s"query_${block}.a", s"value_${block}.a", s"query_${block}.b", s"value_${block}.b")
+    }.toList
   }
 }
 
@@ -262,12 +280,7 @@ object RobertaForSequenceClassification {
     tokenizer.encode(t).map(_.pieceId).map(_ + 1)
   }
 
-  def tokenizeDataframeColumn(
-    data: DataFrame,
-    inputColumnName: String,
-    outputColumnName: String
-  ): DataFrame =
+  def tokenizeDataframeColumn(data: DataFrame)(inputColumnName: String, outputColumnName: String): DataFrame =
      val tokenizeUdf = udf((str: String) => tokenizeStr(str))
      data.withColumn(outputColumnName, tokenizeUdf(col(inputColumnName)))
-  
 }

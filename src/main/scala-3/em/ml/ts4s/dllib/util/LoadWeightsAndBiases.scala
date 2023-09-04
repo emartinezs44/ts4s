@@ -67,7 +67,6 @@ object LoadWeightsAndBiases {
        case None => Nil
 
     val totalNodes = parsedModel ++ headNodes
-
     (0 until size).map { i =>
        val layerName = proto.initializer(i).name().getString
        val internalBuffer: Array[Byte] =
