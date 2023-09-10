@@ -3,7 +3,7 @@ package em.ml.ts4s.dllib.nlp.models
 import com.intel.analytics.bigdl.dllib.keras.models.KerasNet
 import org.junit.Test
 import org.junit.Assert.*
-import com.intel.analytics.bigdl.dllib.nn.LookupTable
+import com.intel.analytics.bigdl.dllib.nn.{LookupTable, SoftMax}
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
 import com.intel.analytics.bigdl.dllib.utils.{MultiShape, Shape, T}
 
@@ -89,7 +89,7 @@ class IntJunitTests {
     val model1 = new RobertaBase[Float](
       vocab = 50262,
       hiddenSize = hiddenSize,
-      nBlock = 1,
+      nBlock = 12,
       nHead = 12,
       intermediateSize = 3072,
       hiddenPDrop = 0.1,
@@ -98,12 +98,12 @@ class IntJunitTests {
       outputAllBlock = false,
       inputSeqLen = bertBaseSeqLength,
       headLayer = None,
-      useLoraInMultiHeadAttention = true
+      useLoraInMultiHeadAttention = false
     )
 
-    val model2 = model1 //.evaluate()
+    val model2 = model1//.evaluate()
     model2.build(bertBaseShape)
-    val result = model2 //.evaluate()
+    val result = model2//.evaluate()
 
 
     val t = System.nanoTime
@@ -151,12 +151,36 @@ class IntJunitTests {
     val duration9 = (System.nanoTime - t8) / 1e9d
     println("D: " + duration9)
 
+    // val result1 = result.forward(input)
+
     val result2 = result.forward(input)
-    val t9      = System.nanoTime
-    //val result2 = result.forward(input)
-    println("Backward 0")
+
+    println("backward")
+    val t0Back = System.nanoTime
     model1.backward(input, result2)
-    println("Backward 1")
+    val durationt0Back0 = (System.nanoTime - t0Back) / 1e9d
+    println("B0: " + durationt0Back0)
+
+    val t1Back = System.nanoTime
+    model1.backward(input, result2)
+    val durationt0Back01 = (System.nanoTime - t1Back) / 1e9d
+    println("B1: " + durationt0Back01)
+
+    val t2Back = System.nanoTime
+    model1.backward(input, result2)
+    val durationt0Back02 = (System.nanoTime - t2Back) / 1e9d
+    println("B2: " + durationt0Back02)
+
+    val t3Back = System.nanoTime
+    model1.backward(input, result2)
+    val durationt0Back03 = (System.nanoTime - t3Back) / 1e9d
+    println("B3: " + durationt0Back03)
+
+    val t4Back = System.nanoTime
+    model1.backward(input, result2)
+    val durationt0Back04 = (System.nanoTime - t4Back) / 1e9d
+    println("B3: " + durationt0Back04)
+    /*println("Backward 1")
     model1.backward(input, result2)
     println("Backward 2")
     model1.backward(input, result2)
@@ -165,8 +189,31 @@ class IntJunitTests {
     println("Backward 4")
     model1.backward(input, result2)
     val duration10 = (System.nanoTime - t9) / 1e9d
-    println("D: " + duration10 / 5)
+    println("D: " + duration10 / 5)*/
 
   }
 
+  @Test
+  def softMax(): Unit = {
+    val tensor = Tensor[Float](1, 12, 514, 514).rand()
+
+    val softmax = SoftMax[Float]
+    val t = System.nanoTime
+    val result = softmax.forward(tensor)
+    softmax.forward(tensor)
+    softmax.forward(tensor)
+    softmax.forward(tensor)
+    softmax.forward(tensor)
+    val d = (System.nanoTime - t) / 1e9d
+    println("forward: " + d / 5)
+
+    val t2 = System.nanoTime
+    softmax.backward(tensor, result)
+    softmax.backward(tensor, result)
+    softmax.backward(tensor, result)
+    softmax.backward(tensor, result)
+    softmax.backward(tensor, result)
+    val d2 = (System.nanoTime - t2) / 1e9d
+    println("forward: " + d2 / 5)
+  }
 }

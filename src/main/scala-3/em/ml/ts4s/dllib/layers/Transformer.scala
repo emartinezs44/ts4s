@@ -112,6 +112,7 @@ class Transformer[T: ClassTag](
         )
         .expand(attention_mask.getOutputShape().toSingle())
     }
+    //w = w + attention_mask
 
     w = SoftMax().from(w)
 

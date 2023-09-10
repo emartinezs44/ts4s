@@ -1,3 +1,5 @@
+package em.ml.ts4s.examples
+
 import em.ml.ts4s.dllib.nlp.models.{RobertaBase, RobertaForSequenceClassification}
 import com.intel.analytics.bigdl.dllib.feature.dataset.Sample
 import com.intel.analytics.bigdl.dllib.tensor.Tensor
@@ -110,10 +112,10 @@ object StartTrainingProcess {
           checkpointPath = "",
           trainingDataset = trainDF,
           validationDataset = validationDF,
-          batchSize = 2,
+          batchSize = 1,
           epochs = 1,
           outputModelPath = inputArgs.outputModelPath,
-          outputWeightsPath = inputArgs.ouputWeightsPath,
+          outputWeightsPath = inputArgs.outputWeightsPath,
           categoryColumn = "cat",
           "tokens",
           modelPath = inputModel,

@@ -1,7 +1,7 @@
 val ScalaVersion = "3.3.0"
 val ts4sVersion  = "0.0.1"
 
-val bigdlJarPath = ""
+val bigdlJarPath = "file://///Users/e049627/Development/bigdl_scala_2.13_mainstream/BigDL/scala/dllib/target/"
 
 val bigDlDlibArtifact =
   bigdlJarPath + "bigdl-dllib-spark_3.2.3-2.3.0-SNAPSHOT-jar-with-dependencies.jar"
@@ -48,6 +48,7 @@ val copyArtifacts = Seq(
   "*bigdl*",
   "*scopt*",
   "*javacpp*",
+  "*jsoniter*",
   s"*onnx*",
   "*onnxruntime*",
   "*zoo-core*",
