@@ -19,23 +19,19 @@ trait DlModel {
 
   def fit(
     checkpointPath: String = "",
+    saveModel: Boolean = false,
     trainingDataset: RDD[Sample[Float]],
     validationDataset: RDD[Sample[Float]],
     batchSize: Int,
     epochs: Int,
     outputModelPath: String,
     outputWeightsPath: String,
-    categoryColumn: String,
-    tokensColumn: String,
     modelPath: String = "",
     weightsPath: String = "",
     lr: Double = 5e-5,
     wDecay: Double = 0.0,
     lrDecay: Double = 0.0,
     inputModel: Option[AbstractModule[Activity, Activity, Float]] = None,
-    multiLabel: Boolean = false,
-    validationPerEpoch: Boolean = true,
-    parallelAdam: Boolean = false,
     isLora: Boolean = false
   )(using ev: TensorNumeric[Float]): KerasNet[Float] = {
     val model = {
@@ -72,6 +68,9 @@ trait DlModel {
 
     model.summary()
     model.fit(trainingDataset, batchSize, epochs, validationDataset)
+    if (saveModel)
+      model.saveModel(outputModelPath, outputWeightsPath)
+
     model
   }
 }

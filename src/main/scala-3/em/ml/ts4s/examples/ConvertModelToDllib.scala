@@ -8,9 +8,12 @@ object ConvertModelToDllib {
     InputParserInstances.convetParserInstance.parse(args, ConverterParameters()) match {
       case Some(conf) =>
         def robertaModel =
-          new RobertaForSequenceClassification(seqLen = 514, hiddenSize = 768, nBlock = 1, useLoraInMultiHeadAtt = true)
+          new RobertaForSequenceClassification(seqLen = 514, hiddenSize = 768)
+
         /** Include the number of output classes. This process creates a new RobertaForSequenceClassification from a pretrained Roberta Encoder */
         robertaModel.convertModelFromOnnx(conf.onnxFilePath, conf.outputClasses, conf.outputModelPath, conf.outputWeightPath)
+      case _ =>
+        throw Exception("Error in input data")
     }
   }
 }

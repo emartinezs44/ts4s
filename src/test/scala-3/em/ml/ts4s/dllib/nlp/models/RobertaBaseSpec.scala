@@ -3,7 +3,6 @@ package em.ml.ts4s.dllib.nlp.models
 import org.junit.Test
 
 class RobertaBaseSpec {
-
   @Test
   def createModelFromOnnx(): Unit = {
     def robertaModel = new RobertaForSequenceClassification(seqLen = 514, hiddenSize = 768, nBlock = 1)

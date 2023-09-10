@@ -117,21 +117,6 @@ class RobertaForSequenceClassification(
     )
   )
 
-  val model = new RobertaBase[Float](
-    vocab = 50262,
-    hiddenSize = hiddenSize,
-    nBlock = 12,
-    nHead = 12,
-    intermediateSize = 3072,
-    hiddenPDrop = 0.1,
-    attnPDrop = 0.1,
-    maxPositionLen = seqLen,
-    outputAllBlock = false,
-    inputSeqLen = seqLen,
-    headLayer = None,
-    useLoraInMultiHeadAttention = useLoraInMultiHeadAtt
-  )
-
   def convertModelFromOnnx(
     onnxModelPath: String,
     outputClasses: Int,
@@ -143,6 +128,22 @@ class RobertaForSequenceClassification(
     val jsonStreamEncoderPath = getClass.getClassLoader.getResourceAsStream("models/roberta_base.json")
     val jsonStreamHeadPath    = getClass.getClassLoader.getResourceAsStream("models/classification_head.json")
     val tensorsList           = LoadWeightsAndBiases.loadFromOnnx(onnxModelPath, jsonStreamEncoderPath, Some(jsonStreamHeadPath))
+
+    val model = new RobertaBase[Float](
+      vocab = 50262,
+      hiddenSize = hiddenSize,
+      nBlock = 12,
+      nHead = 12,
+      intermediateSize = 3072,
+      hiddenPDrop = 0.1,
+      attnPDrop = 0.1,
+      maxPositionLen = seqLen,
+      outputAllBlock = false,
+      inputSeqLen = seqLen,
+      headLayer = None,
+      useLoraInMultiHeadAttention = useLoraInMultiHeadAtt
+    )
+
     val head = new RobertaClassificationHead[Float](
       hiddenSize = model.hiddenSize,
       drop = model.hiddenPDrop,
@@ -168,14 +169,13 @@ class RobertaForSequenceClassification(
 
     val p1: Array[List[Int]] = modelBuilt.parameters()._1.map(_.size().toList)
     require(modelWithHead.graphModel.isDefined, "Graph Not Defined")
-
     val parametersInitialized: Seq[(String, Tensor[Float])] = p0.map { case (_, name) =>
       var isBias = false
       val layerName = if (name.startsWith("bias_")) {
         isBias = true
         name.substring("bias_".length)
       } else name
-
+      
       val node = modelWithHead.graphModel.get.nodes.find(_.internalName == layerName)
       if (node.isDefined) {
         val hfName = node.get.hfName
@@ -189,24 +189,13 @@ class RobertaForSequenceClassification(
         if (result.isDefined) {
           (result.get._1, result.get._2)
         } else {
-          // Add head nodes
           val headNodes = RobertaClassHead.parameters(labelsNum = outputClasses)
           val headNode  = headNodes.get(nameToSearch)
           val loraNodes = Transformer.loraParameters(blocks = model.nBlock, hiddenSize = model.hiddenSize)
           if (headNode.isDefined) {
-            (
-              nameToSearch,
-              Tensor[Float](
-                headNode.get
-              ).rand()
-            )
+            (nameToSearch, Tensor[Float](headNode.get).rand())
           } else {
-            (
-              nameToSearch,
-              Tensor[Float](
-                loraNodes(nameToSearch)
-              ).rand()
-            )
+            (nameToSearch, Tensor[Float](loraNodes(nameToSearch)).rand())
           }
         }
       } else {
