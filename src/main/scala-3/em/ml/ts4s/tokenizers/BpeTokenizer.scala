@@ -3,6 +3,8 @@ package em.ml.ts4s.tokenizers
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
+
 private abstract class BpeTokenizer(
   merges: Map[(String, String), Int],
   vocab: Map[String, Int],
@@ -132,20 +134,12 @@ private abstract class BpeTokenizer(
       }
     result
   }
-
-  /** Do the BPE algorithm. Goal is to find the token as the largest words in the known vocabulary. If not possible, the word is split into smaller
-    * subwords, until they are known.
-    *
-    * @return
-    *   Array of TokenPieces, corresponding to encoded token
-    */
+  
   protected def bpe(indToken: IndexedToken): Array[TokenPiece] = {
     var processedToken = ""
     try {
       processedToken = preProcessTokenForBpe(indToken.token)
-      // TODO: Caching
       var word: Array[String] = Array[String]()
-      // split the word into characters, to be combined into subwords
       word = processedToken.map(_.toString).toArray
       val pairs: Array[(String, String)] = getBytePairs(word)
 
@@ -169,9 +163,7 @@ private abstract class BpeTokenizer(
         )
     }
   }
-
-  /** Split the the individual sub texts on special tokens, e.g. masking etc.
-    */
+  
   protected def splitOnSpecialToken(
     specialToken: SpecialToken,
     text: String
@@ -196,7 +188,6 @@ private abstract class BpeTokenizer(
 
     for ((subText, i) <- splitText.zipWithIndex) {
       var done = false
-      // Try to avoid splitting on token
       if (specialToken.singleWord) {
         if (
           (i < (splitText.length - 1)) && !isEndOfWord(
@@ -211,8 +202,6 @@ private abstract class BpeTokenizer(
         }
       }
       if (!done) {
-        // A bit counter-intuitive but we strip the left of the string
-        // since rstrip means the special token is eating all white spaces on its right
         var subTextProcessed: String = subText
         if (specialToken.rstrip && i > 0)
           subTextProcessed = subText.stripPrefix(" ")
@@ -229,18 +218,12 @@ private abstract class BpeTokenizer(
     }
     result
   }
-
-  /** Needs to be implemented
-    */
+  
   def tokenizeSubText(text: String, indexOffset: Int): Array[IndexedToken]
-
-  /** Special tokens of the model for processing
-    */
+  
   val sentencePadding: (String, String) =
     (specialTokens.sentenceStart.content, specialTokens.sentenceEnd.content)
-
-  /** Tokenize considering special tokens and split algorithm
-    */
+  
   def tokenize(
     sentence: Sentence
   ): Array[IndexedToken] = {
@@ -336,8 +319,7 @@ object BpeTokenizer {
           modelSpecialTokens,
           padWithSentenceTokens
         )
-      case _ => throw new Exception("Not supported model!!")
-      //case "xlm" => new XlmTokenizer(merges, vocab, modelSpecialTokens, padWithSentenceTokens)
+      case _ => throw new Exception("Model not supported!!")
     }
   }
 }

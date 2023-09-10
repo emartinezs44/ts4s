@@ -3,7 +3,7 @@ package em.ml.ts4s.tokenizers
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 
-
+/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
 class RobertaTokenizer(
   merges: Map[(String, String), Int],
   vocab: Map[String, Int],
@@ -16,8 +16,6 @@ class RobertaTokenizer(
     padWithSentenceTokens
   ) {
 
-  /** Mapping for bytes to a different set of unicode characters (especially white spaces). This improved model performance for gpt-2
-    */
   private val bytesToUnicodeMapping: Map[Int, String] = {
     val bytes: ListBuffer[Int] = ListBuffer.range[Int](
       '!',

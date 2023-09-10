@@ -38,7 +38,6 @@ trait DlModel {
     parallelAdam: Boolean = false,
     isLora: Boolean = false
   )(using ev: TensorNumeric[Float]): KerasNet[Float] = {
-
     val model = {
       if (inputModel.isDefined) inputModel.get.asInstanceOf[KerasNet[Float]]
       else {
@@ -70,7 +69,6 @@ trait DlModel {
     if (isLora)
        model.freeze()
        model.unFreeze(unfreeze: _*)
-
 
     model.summary()
     model.fit(trainingDataset, batchSize, epochs, validationDataset)

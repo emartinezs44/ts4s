@@ -1,5 +1,7 @@
 package em.ml.ts4s.tokenizers
 
+/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
+
 import scala.collection.{Map, Seq}
 
 case class IndexedToken(token: String, begin: Int = 0, end: Int = 0)
@@ -38,14 +40,13 @@ private[ts4s] class SpecialTokens(
   val mask: SpecialToken = SpecialToken(
     maskTokenString,
     vocab(maskTokenString),
-    lstrip = true // TODO: check if should be done for every model
+    lstrip = true
   )
   val pad: SpecialToken = SpecialToken(padTokenString, vocab(padTokenString))
 
   val additionalTokens: Array[SpecialToken] =
     additionalStrings.map((tok: String) => SpecialToken(tok, vocab(tok)))
 
-  // Put mask first, in case all special tokens are identical (so the stripping can be done first)
   val allTokens: Set[SpecialToken] =
     Set(mask, sentenceStart, sentenceEnd, unk, pad) ++ additionalTokens
 

@@ -15,7 +15,8 @@ case class InputParameters(
   inputModelPath: String = "",
   inputWeightsPath: String = "",
   outputModelPath: String = "",
-  outputWeightsPath: String = ""
+  outputWeightsPath: String = "",
+  batchSize: Int = 0
 )
 
 object InputParserInstances {
@@ -61,5 +62,9 @@ object InputParserInstances {
       .required()
       .action((value, config) => config.copy(outputWeightsPath = value))
       .text("Missing output weights path")
+    opt[Int]("batchSize")
+      .required()
+      .action((value, config) => config.copy(batchSize = value))
+      .text("Missing batchsize")
   }
 }

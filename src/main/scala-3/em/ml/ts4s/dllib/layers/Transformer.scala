@@ -19,7 +19,7 @@ class Transformer[T: ClassTag](
   val seqLen: Int = 0,
   val attnPDrop: Double,
   var graph: RobertaEquivalenceGraph
-)(implicit ev: TensorNumeric[T]) {
+)(using ev: TensorNumeric[T]) {
 
   private def projectionLayer(outputSize: Int, name: String): (Net, String) = {
     val gName = s"${name}_${java.util.UUID.randomUUID()}"

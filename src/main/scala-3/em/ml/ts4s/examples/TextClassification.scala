@@ -14,7 +14,7 @@ import util.chaining.scalaUtilChainingOps
 import scala.collection.mutable
 import scala.language.postfixOps
 
-def createLabel(data: DataFrame)(labelInputCol: String, labelOutputCol: String) = {
+def createLabel(data: DataFrame)(labelInputCol: String, labelOutputCol: String) =
   import org.apache.spark.sql.functions.col
   val st = new StringIndexer()
     .setStringOrderType("alphabetAsc")
@@ -26,9 +26,8 @@ def createLabel(data: DataFrame)(labelInputCol: String, labelOutputCol: String) 
     .transform(data)
     .withColumn(labelOutputCol, col(labelOutputCol).cast(FloatType))
     .withColumn(labelOutputCol, col(labelOutputCol) + 1.0f)
-}
 
-def prepareSamples(dataset: DataFrame, category: String, tokens: String, seqLen: Int): RDD[Sample[Float]] = {
+def prepareSamples(dataset: DataFrame, category: String, tokens: String, seqLen: Int): RDD[Sample[Float]] =
   val trainSetRDD = dataset.select(category, tokens)
   trainSetRDD.rdd
     .map(row => {
@@ -64,11 +63,11 @@ def prepareSamples(dataset: DataFrame, category: String, tokens: String, seqLen:
       val labelTensor    = Tensor[Float](Tensor(Array(category._1.get), Array(1)))
       Sample(Array(featuresTensor, positionIds, masks), labelTensor)
     })
-}
 
 object StartTrainingProcess {
   def main(args: Array[String]): Unit = {
     import org.apache.spark.sql.functions.{split, col}
+    import RobertaForSequenceClassification.*
 
     val conf = Engine
       .createSparkConf()
@@ -76,7 +75,6 @@ object StartTrainingProcess {
     given spark: SparkSession =
       SparkSession
         .builder()
-        .master("local[1]")
         .config(conf)
         .getOrCreate()
 
@@ -95,11 +93,13 @@ object StartTrainingProcess {
           .randomSplit(Array(80, 20))
 
         val trainTokenized =
-          (((train pipe RobertaForSequenceClassification.tokenizeDataframeColumn)("text", "tokens"))
+          (((train
+            pipe tokenizeDataframeColumn)("text", "tokens"))
             pipe createLabel)("cat", "float_cat")
 
         val validationTokenized =
-          (((validation pipe RobertaForSequenceClassification.tokenizeDataframeColumn)("text", "tokens"))
+          (((validation
+            pipe tokenizeDataframeColumn)("text", "tokens"))
             pipe createLabel)("cat", "float_cat")
 
         val ro           = new RobertaForSequenceClassification(seqLen = 514, hiddenSize = 768, useLoraInMultiHeadAtt = true)
