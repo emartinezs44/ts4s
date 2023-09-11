@@ -40,7 +40,7 @@ There is a sbt task to copy the necessary dependencies that you will need for su
 ```
 sbt package copy
 ```
-The ts4s is created in **target/scala-3.3.0/** and the required dependencies in the **dist** folder.
+The ts4s is cretated in **target/scala-3.3.0/** and the required dependencies in the **dist** folder.
 
 ### Get the dataset
 You can follow the instructions to download the dataset in https://huggingface.co/datasets/PlanTL-GOB-ES/MLDoc. Here you will find how to create the dataset for testing purposes.
@@ -54,11 +54,11 @@ MCAT	 MADRID, 29 may (Reuter) - .......
 
 Follow the code in the **examples/TextClassification.scala** to see how the Spark dataframe is created and apply the changes for your own datasets.
 
-### Submitting to the Spark cluster
+### Submiting to the Spark cluster
 
-First, the model must be transformed from onnx to bigdl format. There is a script to load the onnx file and generate the classification model in bigdl format.  Set the SPARK_HOME environment variable first and execute the script including as parameters:
+First, the model must be transformed from onnx to bigdl format. There is a script to load the onnx file and generate the classificaton model in bidl format.  Set the SPARK_HOME environment variable first and excute the script including as parameters:
  - Location of the onnx file.
- - Location of the bigdl model file.
+ - Location of the biddl model file.
  - Location of the bigdl weights file.
  - Number of output classes for you classification case
 ```
@@ -71,16 +71,16 @@ After that, you can throw your model to your Spark cluster passing as parameters
 - Bigdl weights file.
 - Ouput model path.
 - Weights output path.
-- Batch size. The batch size must be a number divisible by the number of max number of cores.
+- Batch size. The buth size must be a number divisible by the number of max number of cores.
 
-Update the submit.sh script in order to adapt the paths of the necessary paths, memory of the driver and executors, the number of cores and cores per executor.
+Update the submit.sh script in order to adapt the paths of the neccessary paths, memory of the driver and executors, the number of cores and cores per executor.
 
 Once the changes are applied, run the submit script:
 
-´´´
+```
 scripts/submit.sh spanish.train.str.1K.txt output_model_test.bigdl output_weights_path.bigdl output_model_test2.bigdl output_weights_path.bigdl 8
-´´´
+```
 
-NOTES:
+### NOTES:
 
-This project at the training phase consumes a lot of heap, so you must tune your executors memory in order to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that start all the Spark environment, cache the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approaches running locally.
+This project at the training phase consumes a lot of heap, so you must tune your executors memory in order to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that start all the Spark environment, cache the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approachs running locally.
