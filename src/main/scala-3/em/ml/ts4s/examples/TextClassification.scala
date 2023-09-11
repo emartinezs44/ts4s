@@ -13,6 +13,7 @@ import org.apache.spark.sql.types.FloatType
 import util.chaining.scalaUtilChainingOps
 import scala.collection.mutable
 import scala.language.postfixOps
+import org.apache.log4j.{Level, Logger}
 
 def createLabel(data: DataFrame)(labelInputCol: String, labelOutputCol: String) =
    import org.apache.spark.sql.functions.col
@@ -65,10 +66,12 @@ def prepareSamples(dataset: DataFrame, category: String, tokens: String, seqLen:
      })
 
 object StartTrainingProcess {
-  def main(args: Array[String]): Unit = {
-    import org.apache.spark.sql.functions.{split, col}
-    import RobertaForSequenceClassification.*
+  Logger.getLogger("org").setLevel(Level.OFF)
+  Logger.getLogger("akka").setLevel(Level.OFF)
 
+  import org.apache.spark.sql.functions.{split, col}
+  import RobertaForSequenceClassification.*
+  def main(args: Array[String]): Unit = {
     val conf = Engine
       .createSparkConf()
 
