@@ -8,7 +8,7 @@ Due to the explosion of the based in attention deep learning models, this initia
 
 This project contains a RoBERTa implementation that is capable or being executed in Spark clusters taking as input a pretrained model from the HuggingFace hub. It uses BigDL dllib as deep learning framework and is based in Spark primitives only.
 
-It runs only in CPU using MKL using FP32 precision due to the underlying deep learning framework but changes available in other projects like Int4 quantification and Lora adaptation could be added in the future.
+It runs only in CPU using MKL using FP32 precision due to the underlying deep learning ramework but changes available in other projects like Int4 quantification and Lora adaptation could be added in the future.
 
 ### Where to begin
 ---
@@ -54,11 +54,11 @@ MCAT	 MADRID, 29 may (Reuter) - .......
 
 Follow the code in the **examples/TextClassification.scala** to see how the Spark dataframe is created and apply the changes for your own datasets.
 
-### Submiting to the Spark cluster
+### Submitting to the Spark cluster
 
-First, the model must be transformed from onnx to bigdl format. There is a script to load the onnx file and generate the classificaton model in bidl format.  Set the SPARK_HOME environment variable first and excute the script including as parameters:
+First, the model must be transformed from onnx to bigdl format. There is a script to load the onnx file and generate the classification model in bigdl format.  Set the SPARK_HOME environment variable first and execute the script including as parameters:
  - Location of the onnx file.
- - Location of the biddl model file.
+ - Location of the bigdl model file.
  - Location of the bigdl weights file.
  - Number of output classes for you classification case
 ```
@@ -71,6 +71,16 @@ After that, you can throw your model to your Spark cluster passing as parameters
 - Bigdl weights file.
 - Ouput model path.
 - Weights output path.
-- Batch size. The buth size must be a number divisible by the number of max number of cores.
+- Batch size. The batch size must be a number divisible by the number of max number of cores.
 
 Update the submit.sh script in order to adapt the paths of the necessary paths, memory of the driver and executors, the number of cores and cores per executor.
+
+Once the changes are applied, run the submit script:
+
+´´´
+scripts/submit.sh spanish.train.str.1K.txt output_model_test.bigdl output_weights_path.bigdl output_model_test2.bigdl output_weights_path.bigdl 8
+´´´
+
+NOTES:
+
+This project at the training phase consumes a lot of heap, so you must tune your executors memory in order to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that start all the Spark environment, cache the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approaches running locally.
