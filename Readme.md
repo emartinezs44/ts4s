@@ -2,36 +2,38 @@
 
 ### Introduction 
 ---
-This is a very experimental project intended to train language models, (and maybe in the future vision transformers) using distributed computing infrastructures like Apache Spark.
+This is a very experimental project intended to train language models, (and maybe in the future vision transformers) using the Apache Spark´s distributed computing infrastructure.
 
-Due to the explosion of the based in attention deep learning models, this initiative has the objective of exploring the possibilities and deficiencies that exist in the Scala and Apache Spark enviroments comparing to all the incredible advances in other source projects and frameworks.
+Due to the explosion of the based in attention deep learning models, this initiative has the objective of exploring the possibilities and deficiencies that exist in the Scala and Apache Spark ecosystems comparing to all the incredible advances in other open source projects and frameworks.
 
-This project contains a RoBERTa implementation that is capable or being executed in Spark clusters taking as input a pretrained model from the HuggingFace hub. It uses BigDL dllib as deep learning framework and is based in Spark primitives only.
+This project contains a RoBERTa implementation that can be fine tuned(currently only for text classification) in Spark clusters taking as input a pretrained model from the HuggingFace hub. It uses **BigDL dllib** as deep learning framework and **Scala 3.3**.
 
-It runs only in CPU using MKL using FP32 precision due to the underlying deep learning ramework but changes available in other projects like Int4 quantification and Lora adaptation could be added in the future.
+It runs only in CPU using MKL using FP32 precision due to the underlying deep learning framework but changes available in other projects like Int4 quantification and Lora adaptation could be added in the future.
 
 ### Where to begin
 ---
-To start this journey first you will need to convert the example pre-trained model from https://huggingface.co/PlanTL-GOB-ES/roberta-base-bne to onnx. You can use the script in the python directory, including as parameters the path where you want to store the onnx file:
+To start this journey first you will need to convert the pre-trained model from https://huggingface.co/PlanTL-GOB-ES/roberta-base-bne to onnx. You can use the script in the python directory, including as parameters the path where you want to store the onnx file:
 
 ```
 python convert.py roberta_encoder.onnx
 ```
 
-You must install the dependencies before launching the process. If you use pip you must have the rust compiler installed.
+You must install the dependencies before launching the process. If you use **pip you must have the rust compiler installed**.
 
 ### Obtaining BigDL dllib
 ---
 This project is created using Scala 3.3 therefore it is necessary to have a Spark distribution for Scala 2.13. You can download from https://spark.apache.org/downloads.html.
 
- There is not official BidDL Dllib for Scala 2.13 release, so you need to clone the forked repo https://github.com/emartinezs44/BigDL and build from sources:
+ There is not official BidDL Dllib for Scala 2.13 release, so you need **to clone the forked repo** https://github.com/emartinezs44/BigDL and build from sources:
 
 ```
 cd scala
 ./make-dist.sh -P scala_2.13
 ```
 
-Note that you will need **Maven** to build BigDL. The pom.xml is changed to build only the dllib project and other needed dependencies. After the compilation you will have in the dllib/target the **bigdl-dllib-spark_3.2.3-2.3.0-SNAPSHOT-jar-with-dependencies.jar**.
+Note that you will need **Maven** to build BigDL. The pom.xml is changed to build only the dllib project and other necessary dependencies. After the compilation you will have in the dllib/target the **bigdl-dllib-spark_3.2.3-2.3.0-SNAPSHOT-jar-with-dependencies.jar**.
+
+You must include the path of this artifact in the **bigdlJarPath** val in **builds.sbt** to add that dependence.
 
 ### Creating the ts4s artifacts
 ---
@@ -56,7 +58,7 @@ Follow the code in the **examples/TextClassification.scala** to see how the Spar
 
 ### Submiting to the Spark cluster
 
-First, the model must be transformed from onnx to bigdl format. There is a script to load the onnx file and generate the classificaton model in bidl format.  Set the SPARK_HOME environment variable first and excute the script including as parameters:
+First, the model must be **converted from onnx to bigdl format**. There is a script to load the onnx file and to generate the classificaton model in bidl format.  Set the SPARK_HOME environment variable first and excute the script including as parameters:
  - Location of the onnx file.
  - Location of the biddl model file.
  - Location of the bigdl weights file.
@@ -65,15 +67,15 @@ First, the model must be transformed from onnx to bigdl format. There is a scrip
 ./scripts/import_onnx.sh onnx_roberta_model.onnx model_test.bigdl weights_test.bigdl 4
 ```
 
-After that, you can throw your model to your Spark cluster passing as parameters:
+After that, you can throw your model into your Spark cluster passing as parameters:
 - Input dataset(Note that with the format explained avobe)
 - Bigdl model file.
 - Bigdl weights file.
-- Ouput model path.
+- Output model path.
 - Weights output path.
-- Batch size. The buth size must be a number divisible by the number of max number of cores.
+- Batch size. It must be a number divisible by the number of max number of cores.
 
-Update the submit.sh script in order to adapt the paths of the neccessary paths, memory of the driver and executors, the number of cores and cores per executor.
+Update the submit.sh script in order to adapt the paths of the necessary paths, memory of the driver and executors, the number of cores and cores per executor.
 
 Once the changes are applied, run the submit script:
 
@@ -83,4 +85,4 @@ scripts/submit.sh spanish.train.str.1K.txt output_model_test.bigdl output_weight
 
 ### NOTES:
 
-This project at the training phase consumes a lot of heap, so you must tune your executors memory in order to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that start all the Spark environment, cache the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approachs running locally.
+This project at the training phase consumes a lot of heap, so you must tune your executors memory to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that start all the Spark environment, cache the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approachs running locally.

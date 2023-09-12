@@ -66,12 +66,14 @@ def prepareSamples(dataset: DataFrame, category: String, tokens: String, seqLen:
      })
 
 object StartTrainingProcess {
-  Logger.getLogger("org").setLevel(Level.OFF)
-  Logger.getLogger("akka").setLevel(Level.OFF)
-
   import org.apache.spark.sql.functions.{split, col}
+  import org.apache.log4j.LogManager
+  import org.apache.log4j.Appender
+  import scala.jdk.CollectionConverters.*
   import RobertaForSequenceClassification.*
+
   def main(args: Array[String]): Unit = {
+
     val conf = Engine
       .createSparkConf()
 
@@ -80,6 +82,10 @@ object StartTrainingProcess {
         .builder()
         .config(conf)
         .getOrCreate()
+
+    import org.apache.logging.log4j.core.config.Configurator
+    Configurator.setLevel("org", org.apache.logging.log4j.Level.OFF);
+    Configurator.setLevel("akka", org.apache.logging.log4j.Level.OFF)
 
     // Pass input text
     InputParserInstances.servicerParserInstance.parse(args, InputParameters()) match {
@@ -115,13 +121,13 @@ object StartTrainingProcess {
           saveModel = true,
           trainingDataset = trainRDD,
           validationDataset = validationRDD,
-          batchSize = 1,
+          batchSize = inputArgs.batchSize,
           epochs = 1,
           outputModelPath = inputArgs.outputModelPath,
           outputWeightsPath = inputArgs.outputWeightsPath,
           modelPath = inputModel,
           weightsPath = inputWeights,
-          isLora = true
+          isLora = false
         )
 
         spark.stop()

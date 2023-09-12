@@ -1,6 +1,9 @@
 #!/bin/bash
 
-if [ -z "$@" ];then echo "Empty arguments!" && exit 1;fi
+if [ $# -eq 0 ]; then
+    echo "Error: missing input params!"
+    exit 1
+fi
 
 INPUT_ONNX_FILE="$1"
 OUTPUT_MODEL_PATH="$2"

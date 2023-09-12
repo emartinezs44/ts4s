@@ -1,6 +1,9 @@
 #!/bin/bash
 
-if [ -z "$@" ];then echo "Empty arguments!" && exit 1;fi
+if [ $# -eq 0 ]; then
+    echo "Error: missing input params!"
+    exit 1
+fi
 
 INPUT_DATASET="$1"
 INPUT_MODEL_PATH="$2"
@@ -9,7 +12,7 @@ OUTPUT_MODEL_PATH="$4"
 OUTPUT_WEIGHTS_PATH="$5"
 BATCH_SIZE="$6"
 
-DRIVER_MEMORY=12G
+DRIVER_MEMORY=14G
 EXECUTOR_MEMORY=1G
 JARS_PATH=dist/
 JAR_FOLDER=target/scala-3.3.0
@@ -20,7 +23,7 @@ EXECUTOR_CORES=1
 JARS_LIST=$(echo ${JARS_PATH}*.jar | tr ' ' ',')
 
 $SPARK_HOME/bin/spark-submit --class ${MAIN_CLASS} \
-  --master local[1]  --conf spark.driver.extraJavaOptions="-Xss512m"  \
+  --master local[1]  --conf spark.driver.extraJavaOptions="-Xss512m -XX:+UseG1GC"  \
   --conf spark.cores.max=${MAX_CORES} \
   --conf spark.task.maxFailures=1 \
   --conf spark.executor.memory=${EXECUTOR_MEMORY} \

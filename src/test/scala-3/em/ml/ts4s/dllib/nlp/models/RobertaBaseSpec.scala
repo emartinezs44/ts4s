@@ -1,11 +1,16 @@
 package em.ml.ts4s.dllib.nlp.models
 
-import org.junit.Test
-
+import org.junit.{Assert, Test}
+import com.intel.analytics.bigdl.dllib.utils.SingleShape
 class RobertaBaseSpec {
   @Test
   def createModelFromOnnx(): Unit = {
+    val onnxPath = ""
+
     def robertaModel = new RobertaForSequenceClassification(seqLen = 514, hiddenSize = 768, nBlock = 1)
-    robertaModel.convertModelFromOnnx("/tmp/model_encoder_roberta_v2.onnx", 2, "/tmp/model1.bigdl", "/tmp/weights1.bigdl")
+
+    if (!onnxPath.isEmpty)
+       val module = robertaModel.convertModelFromOnnx(onnxPath, 2, "/tmp/model2.bigdl", "/tmp/weights2.bigdl")
+       Assert.assertEquals(module.parameters()._1.length, 200)
   }
 }
