@@ -24,7 +24,7 @@ You must install the dependencies before launching the process. If you use **pip
 ---
 This project is created using Scala 3.3 therefore it is necessary to have a Spark distribution for Scala 2.13. You can download from https://spark.apache.org/downloads.html.
 
- There is not official BidDL Dllib for Scala 2.13 release, so you need **to clone the forked repo** https://github.com/emartinezs44/BigDL and build from sources:
+ There is not official BidDL Dllib for Scala 2.13 release, so you need **to clone the forked repo** https://github.com/emartinezs44/BigDL, change to branch scala-2.13 and build from sources:
 
 ```
 cd scala
