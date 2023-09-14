@@ -3,7 +3,7 @@ package em.ml.ts4s.tokenizers
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 
-/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
+/* Adapted from sparknlp project https://github.com/JohnSnowLabs/spark-nlp */
 class RobertaTokenizer(
   merges: Map[(String, String), Int],
   vocab: Map[String, Int],
@@ -32,7 +32,6 @@ class RobertaTokenizer(
     }
     (bytes zip characters.map(_.toChar.toString)).toMap
   }
-
 
   override val prependForPieceId: Option[String] = Some("Ġ")
 

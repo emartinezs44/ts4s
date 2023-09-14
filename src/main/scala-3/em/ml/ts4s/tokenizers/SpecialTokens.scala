@@ -1,6 +1,6 @@
 package em.ml.ts4s.tokenizers
 
-/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
+/* Adapted from sparknlp project https://github.com/JohnSnowLabs/spark-nlp */
 
 import scala.collection.{Map, Seq}
 

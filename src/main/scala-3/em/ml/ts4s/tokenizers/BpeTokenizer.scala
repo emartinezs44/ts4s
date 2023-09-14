@@ -3,7 +3,7 @@ package em.ml.ts4s.tokenizers
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-/* Adapted from scalanlp project https://github.com/JohnSnowLabs/spark-nlp */
+/* Adapted from sparknlp project https://github.com/JohnSnowLabs/spark-nlp */
 
 private abstract class BpeTokenizer(
   merges: Map[(String, String), Int],
