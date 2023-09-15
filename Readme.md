@@ -4,7 +4,7 @@
 ---
 This is a very experimental project intended to train language models, (and maybe in the future vision transformers) using the Apache Spark´s distributed computing infrastructure.
 
-Due to the explosion of the based in attention deep learning models, this initiative has the objective of exploring the possibilities and deficiencies that exist in the Scala and Apache Spark ecosystems comparing to all the incredible advances in other open source projects and frameworks.
+Due to the explosion of the based in attention deep learning models, this initiative has the objective of exploring the possibilities that exist in the Scala and Apache Spark ecosystems for training these models.
 
 This project contains a RoBERTa implementation that can be fine tuned(currently only for text classification) in Spark clusters taking as input a pretrained model from the HuggingFace hub. It uses **BigDL dllib** as deep learning framework and **Scala 3.3**.
 
@@ -42,7 +42,7 @@ There is a sbt task to copy the necessary dependencies that you will need for su
 ```
 sbt package copy
 ```
-The ts4s is cretated in **target/scala-3.3.0/** and the required dependencies in the **dist** folder.
+The ts4s is created in **target/scala-3.3.0/** and the required dependencies in the **dist** folder.
 
 ### Get the dataset
 You can follow the instructions to download the dataset in https://huggingface.co/datasets/PlanTL-GOB-ES/MLDoc. Here you will find how to create the dataset for testing purposes.
@@ -60,7 +60,7 @@ Follow the code in the **examples/TextClassification.scala** to see how the Spar
 
 First, the model must be **converted from onnx to bigdl format**. There is a script to load the onnx file and to generate the classificaton model in bidl format.  Set the SPARK_HOME environment variable first and excute the script including as parameters:
  - Location of the onnx file.
- - Location of the biddl model file.
+ - Location of the bigdl model file.
  - Location of the bigdl weights file.
  - Number of output classes for you classification case
 ```
@@ -68,7 +68,7 @@ First, the model must be **converted from onnx to bigdl format**. There is a scr
 ```
 
 After that, you can throw your model into your Spark cluster passing as parameters:
-- Input dataset(Note that with the format explained avobe)
+- Input dataset(Note that with the format explained above)
 - Bigdl model file.
 - Bigdl weights file.
 - Output model path.
