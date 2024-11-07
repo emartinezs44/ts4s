@@ -89,4 +89,4 @@ This project at the training phase consumes a lot of heap, so you must tune your
 
 Update Nov 2024:
 
-This project is obsolete. Take a look for a better understanding a future approach using other frameworks on topo of apache Spark like https://github.com/sbrunk/storch.
+This project is obsolete because there is no plan to support Scala 2.13 in Bigdl-dllib. Take a look for other options using another frameworks, and contribute with other implementations on top of apache Spark using Scala like https://github.com/sbrunk/storch.
