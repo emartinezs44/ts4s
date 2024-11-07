@@ -85,4 +85,8 @@ scripts/submit.sh spanish.train.str.1K.txt output_model_test.bigdl output_weight
 
 ### NOTES:
 
-This project at the training phase consumes a lot of heap, so you must tune your executors memory to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that starts a Spark environment, caches the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approaches running locally.
+This project at the training phase consumes a lot of heap, so you must tune your executors memory to increase the batch size. If you try to do in your laptop, consider that this framework is a normal Spark application that starts a Spark environment, caches the model and use the block manager to reduce the weights every iteration and it is very slow comparing to other approaches running locally. 
+
+Update Nov 2024:
+
+This project is obsolete. Take a look for a better understanding a future approach using other frameworks on topo of apache Spark like https://github.com/sbrunk/storch.
